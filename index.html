@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>MBTI老鼠冒險</title>
+  <title>MBTI老鼠冒險Day1</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body { font-family: 'Noto Sans TC',sans-serif; background: #faf6f2; margin: 0; padding: 0; }
@@ -17,29 +17,16 @@
 </head>
 <body>
   <div class="container">
-    <h1>MBTI老鼠冒險</h1>
+    <h1>MBTI鼠冒險Day1</h1>
     <div id="app">
       <div id="loading">載入題庫中…</div>
     </div>
   </div>
   <script>
-    // 你可自動填入背景設定.txt所有16型角色資料
     const MBTI_MAP = {
-      "INFP": {
-        "name": "索夢妮雅", "title": "幻想夢旅鼠",
-        "bg": "來自浮空之城「夢紗谷」的索夢妮雅，自小便擁有踏入他鼠夢境的能力。她總是提著一盞裝有月光的瓶子，穿梭於沉睡的心靈間，將那些被遺忘的願望編進夢之冊……"
-      },
-      "INTP": {
-        "name": "柯姬崔克絲", "title": "齒輪發明鼠",
-        "bg": "柯姬崔克絲來自懸浮都市「旋齒之環」，她從小就對「為什麼不能這樣運作？」這句話著迷。她的實驗室是一個永遠轉動的圓形結構……"
-      },
-      "ESTP": {
-        "name": "雷斯特", "title": "極限挑戰鼠",
-        "bg": "雷斯特活在當下，而且是在當下的最危險邊緣。他是極速滑翔賽的五屆冠軍……"
-      },
-      // 其餘13型以相同格式依背景設定.txt 自行補齊
+      "INFP": { "name": "索夢妮雅", "title": "幻想夢旅鼠", "bg": "（請貼入你的背景設定內容）" },
+      // ... 其餘型號
     };
-
     let questions = [];
     let idx = 0, score = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
 
@@ -52,7 +39,6 @@
     function render() {
       const app = document.getElementById("app");
       if (idx >= questions.length) {
-        // 計算MBTI四維，結果顯示
         let mbti = "";
         mbti += (score.E >= score.I ? "E" : "I");
         mbti += (score.S >= score.N ? "S" : "N");
@@ -81,7 +67,6 @@
     }
     function choose(i) {
       const op = questions[idx].options[i];
-      // 支援多score_rule格式
       if(Array.isArray(op.score_rule)) {
         for(let rule of op.score_rule) {
           score[rule.type] = (score[rule.type]||0) + rule.score;
