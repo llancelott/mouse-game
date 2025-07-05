@@ -2,80 +2,70 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>MBTI鼠冒險Day1</title>
+  <title>分支MBTI鼠冒險</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body { font-family: 'Noto Sans TC',sans-serif; background: #faf6f2; margin: 0; padding: 0; }
-    .container { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 24px #0001; padding: 2em; }
-    .question { font-size: 1.35em; margin: 2em 0 1em; }
-    .options button { display: block; margin: 1em 0; width: 100%; font-size: 1.1em; border-radius: 12px; border: 1px solid #eee; background: #f4efe6; padding: 1em; cursor: pointer; transition: 0.2s; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 24px #0001; padding: 2em; }
+    .question { font-size: 1.3em; margin: 2em 0 1em; }
+    .options button { display: block; margin: 1em 0; width: 100%; font-size: 1.05em; border-radius: 12px; border: 1px solid #eee; background: #f4efe6; padding: 1em; cursor: pointer; transition: 0.2s; }
     .options button:hover { background: #e6e3dc; }
     .result { margin-top: 2em; padding: 1.2em; background: #f8f5f0; border-radius: 14px; font-size: 1.15em; }
-    .mbti-mouse { margin-top: 1em; text-align: center; }
-    .mouse-bg { margin-top: 0.5em; font-size: 1em; color: #555; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>MBTI鼠冒險Day1</h1>
-    <div id="app">
-      <div id="loading">載入題庫中…</div>
-    </div>
+    <h1>MBTI分支鼠冒險</h1>
+    <div id="app"><div id="loading">載入中…</div></div>
   </div>
   <script>
-    // 你可以根據背景設定自行補齊 MBTI_MAP
-    const MBTI_MAP = {
-      "INFP": { "name": "索夢妮雅", "title": "幻想夢旅鼠", "bg": "（這裡貼背景設定）" },
-      // ... 其它型號同格式
-    };
-    let questions = [];
-    let idx = 0, score = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    let questions = {};
+    let currentId = "1";
+    let score = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
 
     fetch("story.json").then(r=>r.json()).then(data=>{
-      questions = data;
+      for(const q of data) questions[q.id]=q;
       document.getElementById("loading").remove();
       render();
     });
 
     function render() {
       const app = document.getElementById("app");
-      if (idx >= questions.length) {
+      if(currentId === "END") {
+        // 四維MBTI計分結果
         let mbti = "";
         mbti += (score.E >= score.I ? "E" : "I");
         mbti += (score.S >= score.N ? "S" : "N");
         mbti += (score.T >= score.F ? "T" : "F");
         mbti += (score.J >= score.P ? "J" : "P");
-        let m = MBTI_MAP[mbti] || {};
         app.innerHTML = `
           <div class="result">
-            <h2>你的MBTI鼠是：</h2>
-            <div class="mbti-mouse">
-              <h3>${m.name||mbti}　${m.title||""}　(${mbti})</h3>
-              <div class="mouse-bg">${m.bg||""}</div>
-            </div>
+            <h2>冒險完成！你的MBTI結果：${mbti}</h2>
             <div style="margin-top:2em"><a href="" onclick="location.reload();return false;">再玩一次</a></div>
           </div>
         `;
         return;
       }
-      const q = questions[idx];
+      const q = questions[currentId];
+      if(!q) { app.innerHTML = `<div>無此題號：${currentId}</div>`; return; }
       app.innerHTML = `
-        <div class="question">${idx+1}. ${q.q||"請選擇接下來的行動："}</div>
+        <div class="question">${q.q}</div>
         <div class="options">
-          ${q.options.map((op,i)=>`<button onclick="choose(${i})">${op.a}</button>`).join("")}
+          ${q.options.map((op,i)=>`
+            <button onclick="choose(${i})">${op.text}</button>
+          `).join("")}
         </div>
       `;
     }
-    function choose(i) {
-      const op = questions[idx].options[i];
+    function choose(idx) {
+      const q = questions[currentId];
+      const op = q.options[idx];
       if(Array.isArray(op.score_rule)) {
         for(let rule of op.score_rule) {
           score[rule.type] = (score[rule.type]||0) + rule.score;
         }
-      } else if(op.type && op.score) {
-        score[op.type] = (score[op.type]||0) + op.score;
       }
-      idx++;
+      currentId = op.next;
       render();
     }
   </script>
