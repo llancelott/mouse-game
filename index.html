@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>MBTI鼠冒險Day1 測試</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: 'Noto Sans TC', Arial, sans-serif; background: #f6f8fa; color: #222; padding: 2em; }
+    .block { background: #fff; border-radius: 10px; margin: 2em auto; padding: 2em; box-shadow: 0 4px 16px #0001; max-width: 500px;}
+    h1 { text-align: center; }
+    .question { font-size: 1.2em; margin-bottom: 1em; }
+    .options button { width: 100%; text-align: left; margin: 0.5em 0; padding: 0.7em; border-radius: 6px; border: 1px solid #ccd; background: #f7faff; cursor: pointer; transition: background 0.2s;}
+    .options button.selected { background: #d2ebff; border-color: #3498db; }
+    .result { margin-top: 2em; font-size: 1.1em; background: #e9ffe5; border-radius: 6px; padding: 1em;}
+    .hide { display: none;}
+    .score-list { margin: 1em 0 0 0; }
+    .score-list span { display:inline-block; min-width:2em; }
+    #fileInput {margin-bottom:1.2em;}
+  </style>
+</head>
+<body>
+  <div class="block">
+    <h1>MBTI鼠冒險Day1</h1>
+    <input type="file" id="fileInput" accept=".json">
+    <form id="quizForm" class="hide">
+      <div id="qContainer"></div>
+      <button id="nextBtn" type="button" class="hide">下一題</button>
+    </form>
+    <div id="result" class="result hide"></div>
+  </div>
+<script>
+let storyData = [];
+let current = 0;
+let score = {E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0};
+const qContainer = document.getElementById('qContainer');
+const nextBtn = document.getElementById('nextBtn');
+const resultDiv = document.getElementById('result');
+const quizForm = document.getElementById('quizForm');
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      storyData = JSON.parse(evt.target.result);
+      current = 0;
+      Object.keys(score).forEach(k=>score[k]=0);
+      resultDiv.className="result hide";
+      quizForm.className="";
+      showQuestion(current);
+    } catch {
+      alert('無法解析JSON檔案，請檢查格式！');
+    }
+  }
+  reader.readAsText(e.target.files[0]);
+});
+function showQuestion(idx) {
+  const q = storyData[idx];
+  if(!q) return;
+  let html = `<div class="question"><b>${q.text}</b></div><div class="options">`;
+  q.options.forEach((op, i) => {
+    html += `<button type="button" onclick="selectOpt(${i})" id="opt${i}">${op.label}. ${op.text}<span style="float:right;">${op.mbti}</span></button>`;
+  });
+  html += `</div>`;
+  qContainer.innerHTML = html;
+  nextBtn.className = 'hide';
+}
+window.selectOpt = function(i) {
+  // highlight
+  document.querySelectorAll('.options button').forEach((b,idx)=> {
+    b.classList.toggle('selected', idx===i);
+  });
+  // add score
+  Object.entries(storyData[current].options[i].value).forEach(([k,v]) => { score[k]=(score[k]||0)+v; });
+  nextBtn.className = '';
+};
+nextBtn.onclick = function() {
+  current++;
+  if (current >= storyData.length) {
+    showResult();
+  } else {
+    showQuestion(current);
+  }
+};
+function showResult() {
+  qContainer.innerHTML = "";
+  nextBtn.className = 'hide';
+  let html = "<b>你的MBTI傾向計分：</b><div class='score-list'>";
+  ["E","I","S","N","T","F","J","P"].forEach(k=>{
+    html += `<span>${k}:${score[k]}</span> `;
+  });
+  html += "</div>";
+  resultDiv.innerHTML = html;
+  resultDiv.className = "result";
+}
+</script>
+</body>
+</html>
