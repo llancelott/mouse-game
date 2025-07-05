@@ -1,96 +1,97 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>MBTI鼠冒險Day1 測試</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>MBTI老鼠冒險</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: 'Noto Sans TC', Arial, sans-serif; background: #f6f8fa; color: #222; padding: 2em; }
-    .block { background: #fff; border-radius: 10px; margin: 2em auto; padding: 2em; box-shadow: 0 4px 16px #0001; max-width: 500px;}
-    h1 { text-align: center; }
-    .question { font-size: 1.2em; margin-bottom: 1em; }
-    .options button { width: 100%; text-align: left; margin: 0.5em 0; padding: 0.7em; border-radius: 6px; border: 1px solid #ccd; background: #f7faff; cursor: pointer; transition: background 0.2s;}
-    .options button.selected { background: #d2ebff; border-color: #3498db; }
-    .result { margin-top: 2em; font-size: 1.1em; background: #e9ffe5; border-radius: 6px; padding: 1em;}
-    .hide { display: none;}
-    .score-list { margin: 1em 0 0 0; }
-    .score-list span { display:inline-block; min-width:2em; }
-    #fileInput {margin-bottom:1.2em;}
+    body { font-family: 'Noto Sans TC',sans-serif; background: #faf6f2; margin: 0; padding: 0; }
+    .container { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 24px #0001; padding: 2em; }
+    .question { font-size: 1.35em; margin: 2em 0 1em; }
+    .options button { display: block; margin: 1em 0; width: 100%; font-size: 1.1em; border-radius: 12px; border: 1px solid #eee; background: #f4efe6; padding: 1em; cursor: pointer; transition: 0.2s; }
+    .options button:hover { background: #e6e3dc; }
+    .result { margin-top: 2em; padding: 1.2em; background: #f8f5f0; border-radius: 14px; font-size: 1.15em; }
+    .mbti-mouse { margin-top: 1em; text-align: center; }
+    .mouse-bg { margin-top: 0.5em; font-size: 1em; color: #555; }
   </style>
 </head>
 <body>
-  <div class="block">
-    <h1>MBTI鼠冒險Day1</h1>
-    <input type="file" id="fileInput" accept=".json">
-    <form id="quizForm" class="hide">
-      <div id="qContainer"></div>
-      <button id="nextBtn" type="button" class="hide">下一題</button>
-    </form>
-    <div id="result" class="result hide"></div>
+  <div class="container">
+    <h1>MBTI老鼠冒險</h1>
+    <div id="app">
+      <div id="loading">載入題庫中…</div>
+    </div>
   </div>
-<script>
-let storyData = [];
-let current = 0;
-let score = {E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0};
-const qContainer = document.getElementById('qContainer');
-const nextBtn = document.getElementById('nextBtn');
-const resultDiv = document.getElementById('result');
-const quizForm = document.getElementById('quizForm');
-document.getElementById('fileInput').addEventListener('change', function(e) {
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    try {
-      storyData = JSON.parse(evt.target.result);
-      current = 0;
-      Object.keys(score).forEach(k=>score[k]=0);
-      resultDiv.className="result hide";
-      quizForm.className="";
-      showQuestion(current);
-    } catch {
-      alert('無法解析JSON檔案，請檢查格式！');
+  <script>
+    // 你可自動填入背景設定.txt所有16型角色資料
+    const MBTI_MAP = {
+      "INFP": {
+        "name": "索夢妮雅", "title": "幻想夢旅鼠",
+        "bg": "來自浮空之城「夢紗谷」的索夢妮雅，自小便擁有踏入他鼠夢境的能力。她總是提著一盞裝有月光的瓶子，穿梭於沉睡的心靈間，將那些被遺忘的願望編進夢之冊……"
+      },
+      "INTP": {
+        "name": "柯姬崔克絲", "title": "齒輪發明鼠",
+        "bg": "柯姬崔克絲來自懸浮都市「旋齒之環」，她從小就對「為什麼不能這樣運作？」這句話著迷。她的實驗室是一個永遠轉動的圓形結構……"
+      },
+      "ESTP": {
+        "name": "雷斯特", "title": "極限挑戰鼠",
+        "bg": "雷斯特活在當下，而且是在當下的最危險邊緣。他是極速滑翔賽的五屆冠軍……"
+      },
+      // 其餘13型以相同格式依背景設定.txt 自行補齊
+    };
+
+    let questions = [];
+    let idx = 0, score = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+
+    fetch("story.json").then(r=>r.json()).then(data=>{
+      questions = data;
+      document.getElementById("loading").remove();
+      render();
+    });
+
+    function render() {
+      const app = document.getElementById("app");
+      if (idx >= questions.length) {
+        // 計算MBTI四維，結果顯示
+        let mbti = "";
+        mbti += (score.E >= score.I ? "E" : "I");
+        mbti += (score.S >= score.N ? "S" : "N");
+        mbti += (score.T >= score.F ? "T" : "F");
+        mbti += (score.J >= score.P ? "J" : "P");
+        let m = MBTI_MAP[mbti] || {};
+        app.innerHTML = `
+          <div class="result">
+            <h2>你的MBTI鼠是：</h2>
+            <div class="mbti-mouse">
+              <h3>${m.name||mbti}　${m.title||""}　(${mbti})</h3>
+              <div class="mouse-bg">${m.bg||""}</div>
+            </div>
+            <div style="margin-top:2em"><a href="" onclick="location.reload();return false;">再玩一次</a></div>
+          </div>
+        `;
+        return;
+      }
+      const q = questions[idx];
+      app.innerHTML = `
+        <div class="question">${idx+1}. ${q.q||"請選擇接下來的行動："}</div>
+        <div class="options">
+          ${q.options.map((op,i)=>`<button onclick="choose(${i})">${op.a}</button>`).join("")}
+        </div>
+      `;
     }
-  }
-  reader.readAsText(e.target.files[0]);
-});
-function showQuestion(idx) {
-  const q = storyData[idx];
-  if(!q) return;
-  let html = `<div class="question"><b>${q.text}</b></div><div class="options">`;
-  q.options.forEach((op, i) => {
-    html += `<button type="button" onclick="selectOpt(${i})" id="opt${i}">${op.label}. ${op.text}<span style="float:right;">${op.mbti}</span></button>`;
-  });
-  html += `</div>`;
-  qContainer.innerHTML = html;
-  nextBtn.className = 'hide';
-}
-window.selectOpt = function(i) {
-  // highlight
-  document.querySelectorAll('.options button').forEach((b,idx)=> {
-    b.classList.toggle('selected', idx===i);
-  });
-  // add score
-  Object.entries(storyData[current].options[i].value).forEach(([k,v]) => { score[k]=(score[k]||0)+v; });
-  nextBtn.className = '';
-};
-nextBtn.onclick = function() {
-  current++;
-  if (current >= storyData.length) {
-    showResult();
-  } else {
-    showQuestion(current);
-  }
-};
-function showResult() {
-  qContainer.innerHTML = "";
-  nextBtn.className = 'hide';
-  let html = "<b>你的MBTI傾向計分：</b><div class='score-list'>";
-  ["E","I","S","N","T","F","J","P"].forEach(k=>{
-    html += `<span>${k}:${score[k]}</span> `;
-  });
-  html += "</div>";
-  resultDiv.innerHTML = html;
-  resultDiv.className = "result";
-}
-</script>
+    function choose(i) {
+      const op = questions[idx].options[i];
+      // 支援多score_rule格式
+      if(Array.isArray(op.score_rule)) {
+        for(let rule of op.score_rule) {
+          score[rule.type] = (score[rule.type]||0) + rule.score;
+        }
+      } else if(op.type && op.score) {
+        score[op.type] = (score[op.type]||0) + op.score;
+      }
+      idx++;
+      render();
+    }
+  </script>
 </body>
 </html>
